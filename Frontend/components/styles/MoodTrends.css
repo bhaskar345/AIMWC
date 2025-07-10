@@ -1,0 +1,6 @@
+.chart-container {
+    position: relative;
+    width: 100%; /* Or a percentage value */
+    height: 600px; /* Or a percentage value */
+  }
+  
