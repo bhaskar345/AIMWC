@@ -24,4 +24,4 @@ Implements the graphical representation of your moods and mentally support you w
 
 >run the frontend with **npm run dev** .
 
->Go to the browser and hit **localhost:5174** .
+>Go to the browser and hit **localhost:5173** .
