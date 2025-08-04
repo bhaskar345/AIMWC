@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db import IntegrityError
 from django.contrib.auth import authenticate
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from .models import JournalEntry, CustomUser
@@ -36,9 +37,8 @@ class UserRegistrationView(APIView):
                 user.set_password(password)
                 user.save()
                 return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
-            except Exception as err:
-                if str(err) == "UNIQUE constraint failed: app_customuser.email":    
-                    return Response({'message': 'User already exists'})
+            except IntegrityError:
+                return Response({'message': 'User already exists'}, status=status.HTTP_400_BAD_REQUEST)
         
         except Exception as err:
             print(err)
@@ -46,19 +46,21 @@ class UserRegistrationView(APIView):
 
 class LoginView(APIView):
     def post(self, request):
-        try:
-            email = request.data.get('email')
-            password = request.data.get('password')
-            user = authenticate(email=email, password=password)
-            if user is not None:
-                refresh = RefreshToken.for_user(user)
-                return Response({
-                    'refresh': str(refresh),
-                    'access_token': str(refresh.access_token)
-                })
-            return Response({'message': 'Invalid Credentials!!'})
-        except Exception as err:
-            print(err)
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        if not email or not password:
+            return Response({'error': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(email=email, password=password)
+        if user:
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
+            })
+        return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 
 class UserMeView(APIView):
