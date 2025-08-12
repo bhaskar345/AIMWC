@@ -5,13 +5,11 @@ from .views import UserRegistrationView,LoginView, UserMeView, EntryView, MoodSt
 
 urlpatterns = [
     path('auth/register/', UserRegistrationView.as_view()),
+    path('auth/login/', LoginView.as_view()),
+    path('auth/login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/me/', UserMeView.as_view()),
 
-    path('api/token/', LoginView.as_view()),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
-    path('users/me/', UserMeView.as_view()),
-    path('user/entry/', EntryView.as_view()),
-
-    path('api/journal/mood-stats/', MoodStatsView.as_view(), name='mood-stats'),
+    path('journal/add/', EntryView.as_view()),
+    path('journal/moods/', MoodStatsView.as_view(), name='mood-stats'),
 
 ]
