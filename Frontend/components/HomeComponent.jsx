@@ -26,7 +26,7 @@ const Home = () => {
                         </i></h4>
                         <div className="col-md-4 col-lg-4">
                             <Nav.Link as={Link} to="login" className='btn btn-info btn-md rounded text-light'>
-                                <i class="fa-solid fa-right-from-bracket"></i>
+                                <i className="fa-solid fa-right-from-bracket"></i>
                                 Login to Continue
                             </Nav.Link>
                         </div>

@@ -10,7 +10,7 @@ const loginUser = async (credentials) => {
         }
 
         const response = await axios.post(
-            `${API_URL}/api/token/`,
+            `${API_URL}/auth/login/`,
             params,
             {
                 headers: {
@@ -37,7 +37,7 @@ const registerUser = async (userData) => {
 
 const fetchUserProfile = async (token) => {
     try {
-        const response = await axios.get(`${API_URL}/users/me/`, {
+        const response = await axios.get(`${API_URL}/auth/me/`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -53,7 +53,7 @@ const fetchUserProfile = async (token) => {
 
 const refreshUser = async (refresh) => {
     try {
-        const response = await axios.post(`${API_URL}/api/token/refresh/`, {"refresh":refresh});
+        const response = await axios.post(`${API_URL}/auth/login/refresh/`, {"refresh":refresh});
         return response.data
     } catch (error) {
         console.error("Refresh user error:", error);
@@ -63,7 +63,7 @@ const refreshUser = async (refresh) => {
 
 const LogEntry = async (data, token) =>{
     try{
-        const response = await axios.post(`${API_URL}/user/entry/`, data, {headers: {Authorization: `Bearer ${token}`}});
+        const response = await axios.post(`${API_URL}/journal/add/`, data, {headers: {Authorization: `Bearer ${token}`}});
         return response.data
     } catch(error){
         throw error;

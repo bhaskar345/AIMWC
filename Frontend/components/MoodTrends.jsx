@@ -44,7 +44,7 @@ function MoodTrends() {
   const [chartData, setChartData] = useState(null);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/journal/mood-stats/`,{
+    axios.get(`${API_URL}/journal/moods/`,{
         headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
         }

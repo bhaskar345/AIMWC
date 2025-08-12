@@ -32,15 +32,16 @@ const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         const response = await loginUser({ email, password });
 
+        console.log(response)
+
         if (response.message=="Invalid Credentials!!"){
             navigate('/login', { state: { message: 'Invalid Credentails!!' }})
         };
-
-        if (response?.access_token) {
-            setToken(response.access_token);
-            localStorage.setItem('token', response.access_token);
+        if (response?.access) {
+            setToken(response.access);
+            localStorage.setItem('token', response.access);
             localStorage.setItem('refresh', response.refresh);
-            const userProfile = await fetchUserProfile(response.access_token);
+            const userProfile = await fetchUserProfile(response.access);
             setUser(userProfile);
             navigate('/chat');
         }

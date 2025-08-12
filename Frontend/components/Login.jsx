@@ -37,11 +37,11 @@ const Login = () => {
                             {message && <h5 className='text-info'>{message}</h5>}
                                 <h3 className="text-center text-info">Login</h3>
                                 <div className="form-group">
-                                    <label for="email" className="text-info"><h6>Email:</h6></label><br/>
+                                    <label htmlFor="email" className="text-info"><h6>Email:</h6></label><br/>
                                     <input type="email" onChange={handleChange} name="email" id="email" className="form-control"/>
                                 </div>
                                 <div className="form-group">
-                                    <label for="password" className="text-info"><h6>Password:</h6></label><br/>
+                                    <label htmlFor="password" className="text-info"><h6>Password:</h6></label><br/>
                                     <input type="password" onChange={handleChange} name="password" id="password" className="form-control"/>
                                 </div>
                                 <div className="form-group">
