@@ -4,19 +4,9 @@ const API_URL = 'http://127.0.0.1:8000';
 
 const loginUser = async (credentials) => {
     try {
-        const params = new URLSearchParams();
-        for (const key in credentials) {
-            params.append(key, credentials[key]);
-        }
-
         const response = await axios.post(
             `${API_URL}/auth/login/`,
-            params,
-            {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-            }
+            credentials
         );
         return response.data;
     } catch (error) {
