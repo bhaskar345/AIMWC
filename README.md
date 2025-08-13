@@ -5,7 +5,7 @@ Implements the graphical representation of your moods and mentally support you w
 
 ## Setup Project :
 
-**Backend :**
+**Django Backend :**
 >Move to the Backend folder.
 
 >Create a virtual environment to install dependencies in and activate it.
@@ -16,6 +16,16 @@ Implements the graphical representation of your moods and mentally support you w
 
 >Navigate to project folder and run **python manage.py runserver** to run the backend server.
 
+**FastAPI Backend :**
+>Move to the FastAPI Backend folder.
+
+>Create a virtual environment to install dependencies in and activate it.
+
+>Install the dependencies.
+
+>Run migrations and add your **gemini_api_key** as an environment variable.
+
+>Navigate to project folder and run **uvicorn main:app --reload** to run the backend server.
 
 **Frontend :**
 >Move to the Frontend folder.

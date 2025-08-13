@@ -30,35 +30,39 @@ const AuthProvider = ({ children }) => {
     }, [token]);
 
     const login = async (email, password) => {
-        const response = await loginUser({ email, password });
+        try{
+            
+            const response = await loginUser({ email, password });
 
-        console.log(response)
-
-        if (response.message=="Invalid Credentials!!"){
-            navigate('/login', { state: { message: 'Invalid Credentails!!' }})
-        };
-        if (response?.access) {
-            setToken(response.access);
-            localStorage.setItem('token', response.access);
-            localStorage.setItem('refresh', response.refresh);
-            const userProfile = await fetchUserProfile(response.access);
-            setUser(userProfile);
-            navigate('/chat');
+            if (response.message=="Invalid Credentials!!"){
+                navigate('/login', { state: { message: 'Invalid Credentails!!' }})
+            };
+            if (response?.access) {
+                setToken(response.access);
+                localStorage.setItem('token', response.access);
+                localStorage.setItem('refresh', response.refresh);
+                const userProfile = await fetchUserProfile(response.access);
+                setUser(userProfile);
+                navigate('/chat');
+            }
         }
+        catch (err){
+            console.log(err)
+        }
+
     };
 
     const register = async (firstName, lastName, email, password) => {
         try{
             const message = await registerUser({firstName, lastName, email, password });
             if (message==="User already exists"){
-                console.log("response message", message)
                 navigate('/register', { state: { message: 'User already exists.' } });
             } else{
                 navigate('/login', { state: { message: 'Registred! Please Login now.' }});
             }
         }
         catch (err){
-            console.log(err);
+            console.log(err)        
         }
     };
 
@@ -66,6 +70,7 @@ const AuthProvider = ({ children }) => {
         setToken(null);
         setUser(null);
         localStorage.removeItem('token');
+        localStorage.removeItem('refresh');
         navigate('/');
     };
 

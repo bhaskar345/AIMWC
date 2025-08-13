@@ -1,0 +1,9 @@
+sqlalchemy
+fastapi
+uvicorn
+fastapi-jwt-auth-v2
+pydantic
+google-genai
+passlib
+python-dotenv
+bcrypt

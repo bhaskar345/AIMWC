@@ -10,8 +10,9 @@ const loginUser = async (credentials) => {
         );
         return response.data;
     } catch (error) {
-        console.error("Login error:", error);
-        throw error;
+        if (error.response.statusText=="Unauthorized"){
+            return error.response.data
+        };
     }
 };
 
@@ -20,8 +21,9 @@ const registerUser = async (userData) => {
         const response = await axios.post(`${API_URL}/auth/register/`, userData);
         return response.data.message
     } catch (error) {
-        console.error("Registration error:", error);
-        throw error;
+        if (error.response.statusText=="Unauthorized"){
+            return error.response.data.message
+        };
     }
 };
 
@@ -34,7 +36,6 @@ const fetchUserProfile = async (token) => {
         });
         return response.data;
     } catch (error) {
-        // console.error("Fetch user profile error:", error);
         if (error.response.statusText=="Unauthorized"){
             return null
         };
@@ -46,14 +47,21 @@ const refreshUser = async (refresh) => {
         const response = await axios.post(`${API_URL}/auth/login/refresh/`, {"refresh":refresh});
         return response.data
     } catch (error) {
-        console.error("Refresh user error:", error);
+        if (error.response.statusText=="Unauthorized"){
+            return error.response.data.message
+        };
         throw error;
     };
 };
 
 const LogEntry = async (data, token) =>{
     try{
-        const response = await axios.post(`${API_URL}/journal/add/`, data, {headers: {Authorization: `Bearer ${token}`}});
+        const response = await axios.post(`${API_URL}/journal/add/`, data, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+            }
+        });
         return response.data
     } catch(error){
         throw error;

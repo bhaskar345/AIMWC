@@ -1,15 +1,21 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext.jsx';
 import {LogEntry, API_URL, refreshUser, fetchUserProfile} from '../api.js'
 import { useState, useRef, useEffect } from 'react';
 import Alert from 'react-bootstrap/Alert';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
-
+import { useNavigate } from 'react-router-dom';
 
 const LogMood = () =>{
 
     const { user, setUser } = useContext(AuthContext);
+    const [Wassup, setWassup] = useState('');
+    const [Suggestion, setSuggestion] = useState('');
+    const [Text, setText] = useState('');
+    const navigate = useNavigate();
+    const myElement = useRef(null);
+
     if (!user) {
         if (localStorage.getItem('token')){
             const getUser = async () => {
@@ -24,8 +30,6 @@ const LogMood = () =>{
         }
     }
 
-    const [Suggestion, setSuggestion] = useState('')
-    const myElement = useRef(null);
     useEffect(() => {
         if (myElement.current) {
             if (Suggestion){
@@ -36,7 +40,6 @@ const LogMood = () =>{
       }, [Suggestion]);
 
 
-    const [Text, setText] = useState('');
     const HandleEntry = async (e) => {
         if (Text){
             e.preventDefault();
@@ -45,20 +48,31 @@ const LogMood = () =>{
                 setText('');
                 setSuggestion(response);
             } catch (err){
-                if (err.response.statusText=="Unauthorized"){
-                    const tokendata = await refreshUser(localStorage.getItem("refresh"));
-                    localStorage.setItem('token', tokendata.access);
-                    // setToken(localStorage.getItem('token'));
-                    const response = await axios.post(`${API_URL}/user/entry/`, {'text':Text}, {headers: {Authorization: `Bearer ${localStorage.getItem('token')}`}});
-                    console.log(response)
-                    setText('');
-                    setSuggestion(response.data);
-                };
-            }
-        }
-    }
+                if (localStorage.getItem('token')){
+                    if (err.response.statusText=="Unauthorized"){
+                        const tokendata = await refreshUser(localStorage.getItem("refresh"));
+                        if (tokendata=="Refresh token expired"){
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('refresh');
+                            setUser(null);
+                            navigate('/login', { replace: true, state: { message: 'Please log in again' } });
 
-    const [Wassup, setWassup] = useState('');
+                        }else{
+                            localStorage.setItem('token', tokendata.access);
+                            const response = await axios.post(`${API_URL}/journal/add/`, {'text':Text}, {headers: {Authorization: `Bearer ${localStorage.getItem('token')}`}});
+                            setText('');
+                            setSuggestion(response.data);                        
+                        }
+                    };
+                }else {
+                    navigate('/login', { replace: true, state: { message: 'Please log in again' } });
+
+                };
+            };
+        }
+    };
+
+
     const myStrings = [
         "What’s going on in your world today? Anything exciting, new, or interesting that you’d love to share?",
         "What’s the latest vibe around you? Any cool stuff happening or just chilling through life like a boss?",
