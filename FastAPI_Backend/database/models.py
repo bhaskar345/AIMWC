@@ -1,33 +1,40 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON
-from sqlalchemy.orm import relationship
-from .connections import Base
+from __future__ import annotations
 from datetime import datetime
+from typing import List
+from sqlalchemy import String, Integer, DateTime, ForeignKey, JSON
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from .connections import Base
 
+def default_emotions() -> list:
+    return []
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    first_name = Column(String(24), nullable=False)
-    last_name = Column(String(24), nullable=False)
-    email = Column(String(254), unique=True, index=True, nullable=False)
-    password = Column(String(255), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    first_name: Mapped[str] = mapped_column(String(24), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(24), nullable=False)
+    email: Mapped[str] = mapped_column(String(254), unique=True, index=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    entries = relationship("JournalEntry", back_populates="user")
+    entries: Mapped[List["JournalEntry"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<User {self.email}>"
 
 class JournalEntry(Base):
     __tablename__ = "journal_entries"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    text = Column(String, nullable=False)
-    emotions = Column(JSON, default=list)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    text: Mapped[str] = mapped_column(String, nullable=False)
+    emotions: Mapped[list] = mapped_column(JSON, default=default_emotions)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
-    user = relationship("User", back_populates="entries")
+    user: Mapped["User"] = relationship(back_populates="entries")
 
-    def __repr__(self):
-        return f"{self.user.username} - {self.created_at.strftime('%Y-%m-%d')}"
+    def __repr__(self) -> str:
+        return f"{self.user.first_name} {self.user.last_name} - {self.created_at.strftime('%Y-%m-%d')}"
