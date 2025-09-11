@@ -13,9 +13,3 @@ class LoginModel(BaseModel):
 class TokenPair(BaseModel):
     access: str
     refresh: str
-
-class AccessToken(BaseModel):
-    access: str
-
-class RefreshTokenModel(BaseModel):
-    refresh: str

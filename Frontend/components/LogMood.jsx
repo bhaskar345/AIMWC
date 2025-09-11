@@ -1,143 +1,226 @@
-import { useContext } from 'react';
-import { AuthContext } from '../contexts/AuthContext.jsx';
-import {LogEntry, API_URL, refreshUser, fetchUserProfile} from '../api.js'
-import { useState, useRef, useEffect } from 'react';
-import Alert from 'react-bootstrap/Alert';
-import { Navigate } from 'react-router-dom';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useContext, useState, useRef, useEffect } from "react";
+import { AuthContext } from "../contexts/AuthContext.jsx";
+import { API_URL, fetchUserProfile, refreshUser } from "../api.js";
+import { Navigate, useNavigate } from "react-router-dom";
 
-const LogMood = () =>{
-
+const LogMood = () => {
     const { user, setUser } = useContext(AuthContext);
-    const [Wassup, setWassup] = useState('');
-    const [Suggestion, setSuggestion] = useState('');
-    const [Text, setText] = useState('');
+    const [messages, setMessages] = useState([]);
+    const [text, setText] = useState("");
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const myElement = useRef(null);
-
-    if (!user) {
-        if (localStorage.getItem('token')){
-            const getUser = async () => {
-                const user = await fetchUserProfile(localStorage.getItem('token'));
-                if (user){
-                    setUser(user);
-                };
-            };
-            getUser();
-        } else {
-            return <Navigate to="/login" replace={true} />;
-        }
-    }
+    const chatEndRef = useRef(null);
 
     useEffect(() => {
-        if (myElement.current) {
-            if (Suggestion){
-                myElement.current.innerHTML = Suggestion.suggestion
-                myElement.current.style.display = "block";                
-            }
+        if (chatEndRef.current) {
+        chatEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
-      }, [Suggestion]);
+    }, [messages]);
 
-
-    const HandleEntry = async (e) => {
-        if (Text){
-            e.preventDefault();
-            try{
-                const response  = await LogEntry({'text':Text}, localStorage.getItem('token'))
-                setText('');
-                setSuggestion(response);
-            } catch (err){
-                if (localStorage.getItem('token')){
-                    if (err.response.statusText=="Unauthorized"){
-                        const tokendata = await refreshUser(localStorage.getItem("refresh"));
-                        if (tokendata=="Refresh token expired"){
-                            localStorage.removeItem('token');
-                            localStorage.removeItem('refresh');
-                            setUser(null);
-                            navigate('/login', { replace: true, state: { message: 'Please log in again' } });
-
-                        }else{
-                            localStorage.setItem('token', tokendata.access);
-                            const response = await axios.post(`${API_URL}/journal/add/`, {'text':Text}, {headers: {Authorization: `Bearer ${localStorage.getItem('token')}`}});
-                            setText('');
-                            setSuggestion(response.data);                        
-                        }
-                    };
-                }else {
-                    navigate('/login', { replace: true, state: { message: 'Please log in again' } });
-
-                };
-            };
+    if (!user) {
+        if (localStorage.getItem("token")) {
+        const getUser = async () => {
+            const profile = await fetchUserProfile(localStorage.getItem("token"));
+            if (profile) setUser(profile);
+        };
+        getUser();
+        } else {
+        return <Navigate to="/login" replace={true} />;
         }
     };
 
+    const HandleEntry = async (e) => {
+        e.preventDefault();
+        if (!text.trim()) return;
 
-    const myStrings = [
-        "What’s going on in your world today? Anything exciting, new, or interesting that you’d love to share?",
-        "What’s the latest vibe around you? Any cool stuff happening or just chilling through life like a boss?",
-        "Sup! Any news, chaos, or random adventure going on in your corner of this wild, spinning planet?",
-        "Tell me everything—life, friends, dreams, memes, weird moments—whatever’s on your mind, I’m ready!",
-        "How’s it going? What mischief, magic, or mellow moods are happening in your world this fine day, my friend?",
-        "What’s happening, superstar? Hit me with your current vibe, thoughts, or tales from today’s chapter of life.",
-        "What’s up? Got any fun gossip, random thoughts, wild ideas, or deep questions bouncing around your head?",
-        "Drop me a line—what’s new in your mind, heart, life, or even just your latest playlist?",
-        "Is life chill or wild right now? Gimme the highlights, lowlights, or your latest food obsession.",
-        "Spill the beans—anything cool, weird, hilarious, or totally random going on in your life today?",
-        "What’s the tea? I’m all ears for your updates, secrets, rants, or those little daily joys.",
-        "Wassup! Any cool plans, wild ideas, unexpected drama, or just cruising through life’s latest episode?",
-        "How’s life treating you? Anything exciting, exhausting, enlightening, or emotional filling your day so far?",
-        "Sup legend! Let me in on your latest moves—work wins, life fails, weekend plans, or snack discoveries.",
-        "Howdy! Got any stories from today? Deep thoughts, silly memes, weird dreams, or just the joy of surviving?",
-        "what’s the scoop? Anything weird, wonderful, or wildly unexpected that’s happened since we last connected?",
-        "Is your day flowing with energy or crawling along? Either way, I want all the details.",
-        "Wassup! Life throwing you curveballs or confetti lately? Either way, I’m here to hear it all—no filter."
-    ];
-    useEffect(() => {
-        const randomIndex = Math.floor(Math.random() * myStrings.length);
-        setWassup(myStrings[randomIndex]);
-      }, []);
+        const newMsg = { sender: "user", text };
+        setMessages((prev) => [...prev, newMsg]);
+        setText("");
+
+        try {
+            setLoading(true);
+            
+            const response = await fetch(`${API_URL}/journal/add/`, {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify({ text }),
+            });
+
+            if (response.statusText=="Unauthorized"){
+                if (!localStorage.getItem('token')) {
+                    navigate('/login', { replace: true, state: { message: 'Please log in again' } });
+                };
+                const tokendata = await refreshUser(localStorage.getItem("refresh"));
+                if (tokendata=="Refresh token expired"){
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('refresh');
+                    setUser(null);
+                    navigate('/login', { replace: true, state: { message: 'Please log in again' } });
+                }else{
+                    localStorage.setItem('token', tokendata.access);
+                    setLoading(true);
+
+                    const response = await fetch(`${API_URL}/journal/add/`, {
+                        method: "POST",
+                        headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        },
+                        body: JSON.stringify({ text }),
+                    });
+
+                    if (!response.body) throw new Error("Streaming not supported");
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let botText = "";
+
+                    setMessages((prev) => [...prev, { sender: "bot", text: "" }]);
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        botText += chunk;
+
+                        setMessages((prev) => {
+                            const updated = [...prev];
+                            updated[updated.length - 1] = { sender: "bot", text: botText };
+                            return updated;
+                        });
+                    };
+
+                    setLoading(false);                       
+                };
+            } else{
+                if (!response.body) throw new Error("Streaming not supported");
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let botText = "";
+
+                setMessages((prev) => [...prev, { sender: "bot", text: "" }]);
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    botText += chunk;
+
+                    setMessages((prev) => {
+                        const updated = [...prev];
+                        updated[updated.length - 1] = { sender: "bot", text: botText };
+                        return updated;
+                    });
+                }
+
+                setLoading(false);
+            };
+            } catch (err) {
+                console.error("Chat error:", err);
+                setLoading(false);
+        };
+    };
 
     return (
-        <>
-        <div id='logmood'>
+        <div
+            className="d-flex justify-content-center align-items-center"
+            style={{
+                minHeight: "calc(100vh - 70px)",
+                backgroundColor: "white",
+            }}
+        >
+        <div
+            className="card shadow-lg rounded-4 w-100"
+            style={{ maxWidth: "600px", height: "80vh" }}
+        >
 
-            <div className="container pt-5" >
-                <div className="row justify-content-center">
-                    <div className="col-md-8 col-lg-6">
-                        <div className="card shadow-sm rounded-300 pb-3" style={{backgroundColor: "#e8fff9"}}>
-                            <div className="card-body">
-                                <h1 className="card-title mb-4 text-center" style={{fontFamily:'system-ui'}}>Hey, {user && user.username}! &#128075;</h1>
-
-                                    <div className="mb-3 py-2">
-                                        <label htmlFor="question" className="form-label"><h6><i>{Wassup}</i></h6></label>
-                                        <input type="text" value={Text} onChange={(e) => setText(e.target.value)} className="form-control"  id="question" placeholder="" required/>
-                                    </div>
-
-                                    <div className="d-grid">
-                                        <button onClick={HandleEntry} type="submit" className="btn btn-primary btn-md rounded-pill">Post</button>
-                                    </div>
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="container ">
-                <div className="row justify-content-center">
-                    <div className="col-md-8 col-lg-6" style={{fontFamily:"mono"}}>
-                        <img src='logo.png' width={120} height={120} style={{borderRadius:"20%", objectFit:"cover"}}/><br/>
-                        <img src='ripples.svg' width={50} height={50}/>
-                        <Alert ref={myElement} className='h4' variant="primary" style={{color:'black', backgroundColor: "#e7fffe", display:'none'}}>
-                        </Alert>
-                    </div>
-                </div>
-            </div>
-
+        <div className="p-3 bg-primary text-white text-center rounded-top-4">
+          <h5 style={{ fontFamily: "system-ui", margin: 0 }}>
+            Hey, {user && user.username}! 👋
+          </h5>
         </div>
-        </>
+
+        <div className="flex-grow-1 overflow-auto p-3" style={{ height: "100%" }}>
+            <div className="d-flex flex-column gap-3">
+                {messages.length === 0 && (
+                <div className="text-center text-muted">
+                    <p className="text-info">💬 Say something to start the conversation..</p>
+                </div>
+                )}
+
+            {messages.map((msg, idx) => (
+            <div key={idx} className={`d-flex flex-column ${msg.sender === "user" ? "align-items-end" : "align-items-start"}`}>
+                
+                <span 
+                className="small text-muted mb-1" 
+                style={{ fontSize: "0.8rem", fontWeight: "500" }}
+                >
+                {msg.sender === "user" ? "You" : "AI"}
+                </span>
+
+                <div
+                className="p-2 px-3 shadow-sm"
+                style={{
+                    backgroundColor: msg.sender === "user" ? "#dcf8c6" : "#e6e6e6",
+                    borderRadius: msg.sender === "user"
+                    ? "16px 16px 0 16px"
+                    : "16px 16px 16px 0",
+                    maxWidth: "75%",
+                    fontSize: "1rem",
+                    lineHeight: "1.4",
+                }}
+                >
+                {msg.text}
+                </div>
+            </div>
+            ))}
+
+            {loading && (
+                <div className="d-flex justify-content-start">
+                    <div
+                    className="p-2 bg-white rounded-4 shadow-sm d-flex align-items-center gap-2"
+                    style={{
+                        borderRadius: "16px 16px 16px 0",
+                    }}
+                    >
+                    <img src="ripples.svg" alt="typing..." width={40} height={40} />
+                    <span className="text-muted small">Typing...</span>
+                    </div>
+                </div>
+            )}
+
+            <div ref={chatEndRef} />
+          </div>
+        </div>
+
+        <form
+            onSubmit={HandleEntry}
+            className="d-flex p-3 bg-white border-top rounded-bottom-4"
+            style={{ fontFamily: "system-ui" }}
+        >
+            <input
+                type="text"
+                className="form-control rounded-pill me-2 shadow-sm"
+                placeholder="Type your thoughts..."
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+            />
+            <button
+                type="submit"
+                className="btn btn-primary rounded-pill shadow-sm px-4"
+            >
+            Send
+            </button>
+        </form>
+        </div>
+    </div>
     );
-}
+};
 
 export default LogMood;

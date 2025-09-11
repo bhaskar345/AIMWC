@@ -3,11 +3,20 @@ from routes import auth, journal
 from database.connections import Base, engine
 from fastapi.middleware.cors import CORSMiddleware
 from core import config
+from fastapi_jwt_auth.exceptions import AuthJWTException
+from fastapi.responses import JSONResponse
 
 # Create DB tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Mental Wellness Companion")
+
+@app.exception_handler(AuthJWTException)
+def authjwt_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=401,
+        content={"message": "Token Expired"}
+    )
 
 # Allowed origins (you can add more if needed)
 origins = [

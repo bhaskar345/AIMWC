@@ -2,12 +2,11 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from fastapi_jwt_auth import AuthJWT
-from schemas.auth import RegisterModel, LoginModel, TokenPair, AccessToken
+from schemas.auth import RegisterModel, LoginModel, TokenPair
 from fastapi import Body
 from database.models import User
 from database.connections import get_db
 from passlib.hash import bcrypt
-from fastapi_jwt_auth.exceptions import AuthJWTException
 from fastapi_jwt_auth.exceptions import JWTDecodeError
 
 
@@ -32,7 +31,7 @@ def login(user: LoginModel, db: Session = Depends(get_db), Authorize: AuthJWT = 
     refresh_token = Authorize.create_refresh_token(subject=db_user.email)
     return {"access": access_token, "refresh":refresh_token}
 
-@router.post("/login/refresh", response_model=AccessToken)
+@router.post("/login/refresh")
 def refresh(refresh: str = Body(..., embed=True), Authorize: AuthJWT = Depends()):
     try:
         Authorize._token = refresh
@@ -45,10 +44,7 @@ def refresh(refresh: str = Body(..., embed=True), Authorize: AuthJWT = Depends()
 
 @router.get("/me")
 def get_me(Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
-    try:
-        Authorize.jwt_required()
-    except AuthJWTException:
-        return JSONResponse({'message':'Token Expired'} ,status_code=401)
+    Authorize.jwt_required()
     username = Authorize.get_jwt_subject()
     user = db.query(User).filter(User.email == username).first()
     return {"username": user.first_name}

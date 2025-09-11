@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from schemas.mood_trends import MoodTrendsResponse
 from fastapi_jwt_auth import AuthJWT
-from schemas.journal import JournalEntryModel, JournalAddResponse
+from fastapi.responses import StreamingResponse
+from schemas.journal import JournalEntryModel
 from database.models import User, JournalEntry
 from database.connections import get_db
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -26,13 +27,9 @@ model = AutoModelForSequenceClassification.from_pretrained("monologg/bert-base-c
 
 client = genai.Client(api_key=os.getenv('gemini_api_key'))
 
-
-@router.post("/add", response_model=JournalAddResponse)
+@router.post("/add")
 def add_entry(entry: JournalEntryModel, db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
-    try:
-        Authorize.jwt_required()
-    except AuthJWTException:
-        return JSONResponse({'message':'Token Expired'} ,status_code=401)
+    Authorize.jwt_required()
     username = Authorize.get_jwt_subject()
     user = db.query(User).filter(User.email == username).first()
 
@@ -45,23 +42,27 @@ def add_entry(entry: JournalEntryModel, db: Session = Depends(get_db), Authorize
     scores = [round(s.item(), 2) for s in topk.values]
 
     emotions = [{"label":label, "score": scores[i]} for i,label in enumerate(labels)]
-
-    prompt = f'Give a short 50-word response to "{text}". Response have emojis and avoid using any bold or stylized text.'
-
-    response = client.models.generate_content(
-        model="gemini-2.5-flash", 
-        contents=prompt, 
-        config=types.GenerateContentConfig(
-            max_output_tokens=100,
-            thinking_config=types.ThinkingConfig(thinking_budget=0)
-        ),
-    )
-
     new_entry = JournalEntry(text=text, emotions=emotions, user_id=user.id)
     db.add(new_entry)
     db.commit()
 
-    return {'text': text, 'suggestion': response.text}
+    prompt = f'Give a short 50-word response to "{text}". Response have emojis and avoid using any bold or stylized text.'
+
+    def stream():
+        response_stream = client.models.generate_content_stream(
+            model="gemini-2.5-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=100,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0)
+                ),
+            )
+        for chunk in response_stream:
+            if chunk.text:
+                yield chunk.text
+
+    response = StreamingResponse(stream(), media_type="text/plain")
+    return response
 
 @router.get("/moods", response_model=MoodTrendsResponse)
 def get_entries(db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):

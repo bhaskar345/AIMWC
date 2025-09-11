@@ -4,6 +4,7 @@ from rest_framework import permissions, status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import IntegrityError
 from django.contrib.auth import authenticate
+from django.http import StreamingHttpResponse
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from .models import JournalEntry, CustomUser
 from google import genai
@@ -85,25 +86,25 @@ class EntryView(APIView):
             scores = [round(s.item(), 2) for s in topk.values]
 
             emotions = [{"label":label, "score": scores[i]} for i,label in enumerate(labels)]
-
-            # max_value = max(scores)
-            # max_index = scores.index(max_value)
-            # label = labels[max_index]
+            entry = JournalEntry.objects.create(user=request.user, text= text, emotions= emotions)
 
             prompt = f'Give a short 50-word response to "{text}". Response have emojis and avoid using any bold or stylized text.'
-            # prompt1 = f'Craft a calm, reflective 50-word response to "{text}" focused on mindfulness or wellness. Use gentle, soothing language and 3–4 appropriate emojis. No bold or styled text—keep it soft, reassuring, and emotionally intelligent.'
 
-            response = client.models.generate_content(
-                model="gemini-2.5-flash", 
-                contents=prompt, 
-                config=types.GenerateContentConfig(
-                    max_output_tokens=100,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0)
-                ),
-            )
+            def stream():
+                response_stream = client.models.generate_content_stream(
+                    model="gemini-2.5-flash",
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        max_output_tokens=100,
+                        thinking_config=types.ThinkingConfig(thinking_budget=0)
+                    ),
+                )
+                for chunk in response_stream:
+                    if chunk.text:
+                        yield chunk.text
 
-            entry = JournalEntry.objects.create(user=request.user, text= text, emotions= emotions)
-            return Response({'text': text, 'suggestion': response.text})
+            response = StreamingHttpResponse(stream(), content_type="text/plain")
+            return response
         except Exception as err:
             print(err)
 

@@ -45,27 +45,15 @@ const fetchUserProfile = async (token) => {
 const refreshUser = async (refresh) => {
     try {
         const response = await axios.post(`${API_URL}/auth/login/refresh/`, {"refresh":refresh});
+        console.log(response)
         return response.data
     } catch (error) {
+        console.log(error)
         if (error.response.statusText=="Unauthorized"){
-            return error.response.data.message
+            return "Refresh token expired"
         };
         throw error;
     };
 };
 
-const LogEntry = async (data, token) =>{
-    try{
-        const response = await axios.post(`${API_URL}/journal/add/`, data, {
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json",
-            }
-        });
-        return response.data
-    } catch(error){
-        throw error;
-    }
-}
-
-export {API_URL, refreshUser, loginUser, registerUser, fetchUserProfile, LogEntry };
+export {API_URL, refreshUser, loginUser, registerUser, fetchUserProfile };
