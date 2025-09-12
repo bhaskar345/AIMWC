@@ -40,6 +40,7 @@ class CustomUser(AbstractBaseUser):
 
 class JournalEntry(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    sender = models.CharField(max_length=10, choices=[("user", "User"), ("bot", "Bot")], default="user")
     text = models.TextField()
     emotions = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)

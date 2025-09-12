@@ -35,6 +35,7 @@ class JournalEntry(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    sender: Mapped[str] = mapped_column(String(10), nullable=False, server_default="user")
     text: Mapped[str] = mapped_column(String, nullable=False)
     emotions: Mapped[list] = mapped_column(JSON, default=default_emotions)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)

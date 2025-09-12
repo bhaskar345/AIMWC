@@ -1,7 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-
-from .views import UserRegistrationView,LoginView, UserMeView, EntryView, MoodStatsView
+from .views import UserRegistrationView,LoginView, UserMeView, EntryView, MoodStatsView, JournalHistoryView
 
 urlpatterns = [
     path('auth/register/', UserRegistrationView.as_view()),
@@ -11,5 +10,5 @@ urlpatterns = [
 
     path('journal/add/', EntryView.as_view()),
     path('journal/moods/', MoodStatsView.as_view(), name='mood-stats'),
-
+    path('journal/history/', JournalHistoryView.as_view(), name='journal-history'),
 ]

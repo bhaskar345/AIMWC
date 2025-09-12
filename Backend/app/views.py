@@ -93,8 +93,9 @@ class EntryView(APIView):
                 top_k=5
             )
 
-            entry = JournalEntry.objects.create(
+            JournalEntry.objects.create(
                 user=request.user,
+                sender="user",
                 text=text,
                 emotions=emotions,
                 embedding=query_embedding
@@ -115,6 +116,7 @@ User's new journal entry:
 {text}
 
 Instructions:
+- Respond in the SAME LANGUAGE as the user's journal entry
 - Acknowledge the user's feelings in a warm, empathetic way
 - Suggest 1-2 coping strategies that feel FRESH and DIFFERENT from the most common "5-4-3-2-1 grounding exercise"
 - Rotate strategies across different categories: mindful breathing, journaling, gratitude practice, light stretching, music, short walks, positive self-talk, progressive muscle relaxation, guided imagery, drawing, hydration
@@ -127,6 +129,7 @@ Answer:
 """
 
             def stream():
+                ai_text = ""
                 try:
                     response_stream = client.models.generate_content_stream(
                         model="gemini-2.0-flash",
@@ -138,6 +141,7 @@ Answer:
                     for chunk in response_stream:
                         if hasattr(chunk, "text") and chunk.text:
                             got_chunk = True
+                            ai_text += chunk.text
                             yield chunk.text
 
                     if not got_chunk:
@@ -146,10 +150,20 @@ Answer:
                             contents=[{"role": "user", "parts": [{"text": prompt}]}],
                             config=genai.types.GenerateContentConfig(max_output_tokens=200),
                         )
-                        yield fallback.text or "I hear you, but I couldn’t generate a response right now."
+                        ai_text = fallback.text or "I hear you, but I couldn’t generate a response right now."
+                        yield ai_text
 
                 except Exception as e:
                     yield "Sorry, I couldn’t generate a response."
+                finally:
+                    if ai_text.strip():
+                        JournalEntry.objects.create(
+                            user=request.user,
+                            sender="bot",
+                            text=ai_text,
+                            emotions=[],
+                            embedding=[]
+                        )
 
             return StreamingHttpResponse(stream(), content_type="text/plain", status=200)
 
@@ -172,3 +186,19 @@ class MoodStatsView(APIView):
                 emotion_trends[label].append({"date": date, "score": score})
 
         return Response(emotion_trends)
+
+class JournalHistoryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        entries = JournalEntry.objects.filter(user=request.user).order_by("created_at")
+        return Response([
+            {
+                "id": e.id,
+                "text": e.text,
+                "sender": e.sender,
+                "emotions": e.emotions,
+                "created_at": e.created_at.isoformat()
+            }
+            for e in entries
+        ])

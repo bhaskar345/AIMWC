@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 from schemas.mood_trends import MoodTrendsResponse
 from fastapi_jwt_auth import AuthJWT
 from fastapi.responses import StreamingResponse
+from fastapi import BackgroundTasks
 from schemas.journal import JournalEntryModel
 from database.models import User, JournalEntry
-from database.connections import get_db
+from database.connections import get_db, SessionLocal
 from utils.utils import generate_embedding, find_similar_entries
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from google import genai
@@ -25,10 +26,11 @@ model = AutoModelForSequenceClassification.from_pretrained("monologg/bert-base-c
 client = genai.Client(api_key=os.getenv('gemini_api_key'))
 
 @router.post("/add")
-def add_entry(entry: JournalEntryModel, db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
+def add_entry(entry: JournalEntryModel, db: Session = Depends(get_db), Authorize: AuthJWT = Depends(), background_tasks: BackgroundTasks = None):
     Authorize.jwt_required()
     username = Authorize.get_jwt_subject()
     user = db.query(User).filter(User.email == username).first()
+    user_id = user.id
 
     text = entry.text
 
@@ -44,12 +46,12 @@ def add_entry(entry: JournalEntryModel, db: Session = Depends(get_db), Authorize
 
     retrieved_entries = find_similar_entries(
         db=db,
-        user_id=user.id,
+        user_id=user_id,
         query_embedding=query_embedding,
         top_k=5
     )
 
-    new_entry = JournalEntry(text=text, emotions=emotions, user_id=user.id, embedding=query_embedding)
+    new_entry = JournalEntry(user_id=user_id, sender="user", text=text, emotions=emotions, embedding=query_embedding)
     db.add(new_entry)
     db.commit()
 
@@ -57,6 +59,7 @@ def add_entry(entry: JournalEntryModel, db: Session = Depends(get_db), Authorize
         f"- {e.created_at.strftime('%Y-%m-%d')}: {e.text} | Emotions: {e.emotions}"
         for e in retrieved_entries
     ])
+
     prompt = f"""
 You are a compassionate and supportive mental wellness companion.
 Reflect on the user's emotions using the context below.
@@ -68,6 +71,7 @@ User's new journal entry:
 {text}
 
 Instructions:
+- Respond in the SAME LANGUAGE as the user's journal entry
 - Acknowledge the user's feelings in a warm, empathetic way
 - Suggest 1-2 coping strategies that feel FRESH and DIFFERENT from the most common "5-4-3-2-1 grounding exercise"
 - Rotate strategies across different categories: mindful breathing, journaling, gratitude practice, light stretching, music, short walks, positive self-talk, progressive muscle relaxation, guided imagery, drawing, hydration
@@ -78,6 +82,9 @@ Instructions:
 - Avoid repeating the exact same suggestions across different conversations if possible
 Answer:
 """
+
+    ai_text_container = {"text": ""}
+
     def stream():
         try:
             response_stream = client.models.generate_content_stream(
@@ -90,6 +97,7 @@ Answer:
             for chunk in response_stream:
                 if hasattr(chunk, "text") and chunk.text:
                     got_chunk = True
+                    ai_text_container["text"] += chunk.text
                     yield chunk.text
 
             if not got_chunk:
@@ -98,12 +106,32 @@ Answer:
                     contents=[{"role": "user", "parts": [{"text": prompt}]}],
                     config=genai.types.GenerateContentConfig(max_output_tokens=150),
                 )
-                yield fallback.text or "I hear you, but I couldn’t generate a response right now."
+                ai_text_container["text"] = fallback.text or "I hear you, but I couldn’t generate a response right now."
+                yield ai_text_container["text"]
 
         except Exception as e:
+            print("AI Error:", e)
             yield "Sorry, I couldn’t generate a response."
 
+    def save_bot_response(ai_text: str):
+        if ai_text.strip():
+            db_session = SessionLocal()
+            try:
+                db_session.add(JournalEntry(
+                    user_id=user_id,
+                    sender="bot",
+                    text=ai_text,
+                    emotions=[],
+                    embedding=[]
+                ))
+                db_session.commit()
+            finally:
+                db_session.close()
+
     response = StreamingResponse(stream(), media_type="text/plain")
+
+    background_tasks.add_task(lambda: save_bot_response(ai_text_container["text"]))
+    response.background = background_tasks
     return response
 
 @router.get("/moods", response_model=MoodTrendsResponse)
@@ -129,3 +157,11 @@ def get_entries(db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
             emotion_trends[label].append({"date": date, "score": score})
 
     return emotion_trends
+
+@router.get("/history")
+def get_history(db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
+    Authorize.jwt_required()
+    username = Authorize.get_jwt_subject()
+    user = db.query(User).filter(User.email == username).first()
+    entries = db.query(JournalEntry).filter(JournalEntry.user_id == user.id).order_by(JournalEntry.created_at).all()
+    return [{"sender": e.sender, "text": e.text} for e in entries]
