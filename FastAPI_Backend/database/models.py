@@ -4,8 +4,13 @@ from typing import List
 from sqlalchemy import String, Integer, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .connections import Base
+import json
+
 
 def default_emotions() -> list:
+    return []
+
+def default_embeddings() -> list:
     return []
 
 class User(Base):
@@ -33,8 +38,15 @@ class JournalEntry(Base):
     text: Mapped[str] = mapped_column(String, nullable=False)
     emotions: Mapped[list] = mapped_column(JSON, default=default_emotions)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    embedding: Mapped[List] = mapped_column(JSON, default=default_embeddings, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="entries")
+
+    def set_embedding(self, vector):
+        if isinstance(vector, list):
+            self.embedding = vector
+        elif isinstance(vector, (bytes, str)):
+            self.embedding = json.loads(vector)
 
     def __repr__(self) -> str:
         return f"{self.user.first_name} {self.user.last_name} - {self.created_at.strftime('%Y-%m-%d')}"

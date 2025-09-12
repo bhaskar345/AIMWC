@@ -1,3 +1,5 @@
+import torch
+import os
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from schemas.mood_trends import MoodTrendsResponse
@@ -6,16 +8,11 @@ from fastapi.responses import StreamingResponse
 from schemas.journal import JournalEntryModel
 from database.models import User, JournalEntry
 from database.connections import get_db
+from utils.utils import generate_embedding, find_similar_entries
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from fastapi_jwt_auth.exceptions import AuthJWTException
-from fastapi.responses import JSONResponse
-from google.genai import types
 from google import genai
 from collections import defaultdict
 from dotenv import load_dotenv
-import torch
-import torch.nn.functional as F
-import os
 
 
 router = APIRouter()
@@ -34,42 +31,84 @@ def add_entry(entry: JournalEntryModel, db: Session = Depends(get_db), Authorize
     user = db.query(User).filter(User.email == username).first()
 
     text = entry.text
+
     inputs = tokenizer(text, return_tensors="pt", truncation=True)
     outputs = model(**inputs)
-    probs = F.softmax(outputs.logits, dim=-1)[0]
+    probs = torch.nn.functional.softmax(outputs.logits, dim=-1)[0]
     topk = torch.topk(probs, k=3)
     labels = [model.config.id2label[i.item()] for i in topk.indices]
     scores = [round(s.item(), 2) for s in topk.values]
+    emotions = [{"label": label, "score": scores[i]} for i, label in enumerate(labels)]
 
-    emotions = [{"label":label, "score": scores[i]} for i,label in enumerate(labels)]
-    new_entry = JournalEntry(text=text, emotions=emotions, user_id=user.id)
+    query_embedding = generate_embedding(text)
+
+    retrieved_entries = find_similar_entries(
+        db=db,
+        user_id=user.id,
+        query_embedding=query_embedding,
+        top_k=5
+    )
+
+    new_entry = JournalEntry(text=text, emotions=emotions, user_id=user.id, embedding=query_embedding)
     db.add(new_entry)
     db.commit()
 
-    prompt = f'Give a short 50-word response to "{text}". Response have emojis and avoid using any bold or stylized text.'
+    context_text = "\n".join([
+        f"- {e.created_at.strftime('%Y-%m-%d')}: {e.text} | Emotions: {e.emotions}"
+        for e in retrieved_entries
+    ])
+    prompt = f"""
+You are a compassionate and supportive mental wellness companion.
+Reflect on the user's emotions using the context below.
 
+Context (recent journal entries):
+{context_text if context_text else "No relevant past entries found."}
+
+User's new journal entry:
+{text}
+
+Instructions:
+- Acknowledge the user's feelings in a warm, empathetic way
+- Suggest 1-2 coping strategies that feel FRESH and DIFFERENT from the most common "5-4-3-2-1 grounding exercise"
+- Rotate strategies across different categories: mindful breathing, journaling, gratitude practice, light stretching, music, short walks, positive self-talk, progressive muscle relaxation, guided imagery, drawing, hydration
+- If a grounding exercise is truly the best fit, reword it creatively so it feels new and not identical to past responses
+- Keep the message short, encouraging, and supportive
+- Use 2-3 emojis naturally
+- No markdown or bold text, only plain text output
+- Avoid repeating the exact same suggestions across different conversations if possible
+Answer:
+"""
     def stream():
-        response_stream = client.models.generate_content_stream(
-            model="gemini-2.5-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    max_output_tokens=100,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0)
-                ),
+        try:
+            response_stream = client.models.generate_content_stream(
+                model="gemini-2.0-flash",
+                contents=[{"role": "user", "parts": [{"text": prompt}]}],
+                config=genai.types.GenerateContentConfig(max_output_tokens=150),
             )
-        for chunk in response_stream:
-            if chunk.text:
-                yield chunk.text
+
+            got_chunk = False
+            for chunk in response_stream:
+                if hasattr(chunk, "text") and chunk.text:
+                    got_chunk = True
+                    yield chunk.text
+
+            if not got_chunk:
+                fallback = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=[{"role": "user", "parts": [{"text": prompt}]}],
+                    config=genai.types.GenerateContentConfig(max_output_tokens=150),
+                )
+                yield fallback.text or "I hear you, but I couldn’t generate a response right now."
+
+        except Exception as e:
+            yield "Sorry, I couldn’t generate a response."
 
     response = StreamingResponse(stream(), media_type="text/plain")
     return response
 
 @router.get("/moods", response_model=MoodTrendsResponse)
 def get_entries(db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
-    try:
-        Authorize.jwt_required()
-    except AuthJWTException:
-        return JSONResponse({'message':'Token Expired'} ,status_code=401)
+    Authorize.jwt_required()
     username = Authorize.get_jwt_subject()
     user = db.query(User).filter(User.email == username).first()
 

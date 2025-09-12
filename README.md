@@ -43,6 +43,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 export gemini_api_key="your_gemini_api_key_here"
+alembic upgrade head
 uvicorn main:app --reload
 ```
 

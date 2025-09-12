@@ -7,3 +7,5 @@ google-genai
 passlib
 python-dotenv
 bcrypt
+sentence_transformers
+alembic

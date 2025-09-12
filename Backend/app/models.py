@@ -1,7 +1,6 @@
 # models.py
+import json
 from django.db import models
-from django.contrib.auth.models import User
-
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
 class CustomUserManager(BaseUserManager):
@@ -44,6 +43,13 @@ class JournalEntry(models.Model):
     text = models.TextField()
     emotions = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
+    embedding = models.JSONField(default=list, blank=True)
+
+    def set_embedding(self, vector):
+        if isinstance(vector, list):
+            self.embedding = vector
+        elif isinstance(vector, (bytes, str)):
+            self.embedding = json.loads(vector)
 
     def __str__(self):
         return f"{self.user.username} - {self.created_at.strftime('%Y-%m-%d')}"
