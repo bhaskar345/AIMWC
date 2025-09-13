@@ -77,8 +77,6 @@ Visit your browser at `http://localhost:5173` to explore the app!
 Maintaining mental wellness has never been more important. By combining **emotional tracking** and **AI-powered support**, AIMWC aims to provide:
 - Self-awareness through mood visualization.
 - Timely, sensitive mental encouragement.
-- A lightweight, flexible architecture for easy deployment.
-
 
 ---
 

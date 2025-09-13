@@ -13,7 +13,7 @@ const Home = () => {
             <div className="container">
                 <div className="row">
                     <div className="col-md-8 col-lg-8">
-                        <h4 className='text-info text-start'><i>
+                        <h3 className='text-info text-start'><i>
                             <b>
                             Your safe, supportive space—designed to understand how you feel, offer gentle insights, and help you care for your mental well-being. Whether you're feeling up, down, or somewhere in between, I'm here to listen without judgment and guide you with science-backed tips, mood reflections, and calming support—anytime you need it.
 
@@ -23,7 +23,7 @@ const Home = () => {
 
                             Privacy and trust are central to the design of this companion. All user interactions are treated with utmost confidentiality, and no personal data is shared without explicit consent. The AI is trained to respond with sensitivity, avoiding judgment and always encouraging users to seek professional help when necessary.<br/><br/>
                             </b>  
-                        </i></h4>
+                        </i></h3>
                         <div className="col-md-4 col-lg-4">
                             <Nav.Link as={Link} to="login" className='btn btn-info btn-md rounded text-light'>
                                 <i className="fa-solid fa-right-from-bracket"></i>

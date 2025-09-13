@@ -1,6 +1,117 @@
 .chart-container {
-    position: relative;
-    width: 100%; /* Or a percentage value */
-    height: 600px; /* Or a percentage value */
+  width: 100%;
+  height: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.positive-message {
+  background-color: #e6f7f0; /* softer green */
+  border-left: 5px solid #4caf50;
+  border-radius: 10px;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  font-size: 1.1rem; /* ✅ fixed size */
+  font-weight: 500;
+  color: #2e7d32;
+  text-align: center;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
+    'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  position: relative;
+  animation: fadeIn 0.4s ease-in-out;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.positive-message:hover {
+  background: #d4f1db;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #2e7d32;
+  font-size: 20px;
+  font-weight: bold;
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+}
+
+.close-btn:hover {
+  color: #c62828;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-  
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-family: Arial, sans-serif;
+}
+
+.filter-container input {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+.filter-container label {
+  font-weight: 500;
+}
+
+.subcharts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.chart-item {
+  height: 300px;
+}
+
+@media (max-width: 768px) {
+  .subcharts {
+    grid-template-columns: 1fr;
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  font-size: 1rem;
+  color: #555;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #ddd;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  margin-right: 10px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}

@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import IntegrityError
 from django.contrib.auth import authenticate
 from django.http import StreamingHttpResponse
+from datetime import date
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from .models import JournalEntry, CustomUser
 from google import genai
@@ -170,23 +171,6 @@ Answer:
         except Exception as err:
             print("Error:", err)
 
-
-class MoodStatsView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        entries = JournalEntry.objects.filter(user= request.user).order_by('created_at')
-        emotion_trends = defaultdict(list)
-
-        for entry in entries:
-            date = entry.created_at.strftime("%Y-%m-%d")
-            for i in range(len(entry.emotions)):
-                label = entry.emotions[i]['label']
-                score = float(entry.emotions[i]['score'])
-                emotion_trends[label].append({"date": date, "score": score})
-
-        return Response(emotion_trends)
-
 class JournalHistoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -202,3 +186,56 @@ class JournalHistoryView(APIView):
             }
             for e in entries
         ])
+
+class MoodStatsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        entries = JournalEntry.objects.filter(user=request.user).order_by('created_at')
+        emotion_trends = defaultdict(list)
+
+        for entry in entries:
+            date_str = entry.created_at.strftime("%Y-%m-%d")
+            for emo in entry.emotions:
+                label = emo['label']
+                score = float(emo['score'])
+                emotion_trends[label].append({"date": date_str, "score": score})
+
+        today_str = date.today().strftime("%Y-%m-%d")
+        today_scores = []
+        for label, values in emotion_trends.items():
+            today_value = next((v['score'] for v in values if v['date'] == today_str), None)
+            if today_value:
+                today_scores.append((label, today_value))
+
+        today_scores.sort(key=lambda x: x[1], reverse=True)
+        top3 = [label for label, score in today_scores[:3]]
+
+        positive_message = "Take a deep breath — you showed up today, and that matters!"
+        if top3:
+            try:
+                prompt = (
+                    f"The user feels {', '.join(top3)} today. "
+                    "Write a short, warm, uplifting response under 50 words, "
+                    "that responds to the overall emotional vibe without directly naming the emotions. "
+                    "Avoid generic phrases like 'That's a lovely mix of feelings!'. "
+                    "Keep it natural, empathetic, and motivating. "
+                    "No markdown or bold text, only plain text output."
+                )
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash", 
+                    contents=prompt,
+                    config=genai.types.GenerateContentConfig(
+                        max_output_tokens=100,
+                        thinking_config=genai.types.ThinkingConfig(thinking_budget=0)
+                    ),
+                )
+                if response:
+                    positive_message = response.text
+            except Exception as e:
+                positive_message = f"You're feeling {', '.join(top3)} today — stay mindful and keep going!"
+
+        return Response({
+            "emotion_trends": emotion_trends,
+            "positive_message": positive_message
+        })
