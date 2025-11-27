@@ -1,28 +1,105 @@
-#login .container #login-row #login-column #login-box {
-    margin-top: 50px;
-    max-width: 600px;
-    height: 320px;
-    border: 1px 5px solid #0985b2;
-    background-color: #EAEAEA;
-  }
-#login .container #login-row #login-column #login-box #login-form {
-    padding: 20px;
-  }
-#login .container #login-row #login-column #login-box #login-form #register-link {
-    margin-top: -85px;
-  }
-
-.footer-container {	
-    background: #1b9193;
-    width: 100%;
-    height: 40px;
-    position: absolute;
-    bottom: 0;
-    left: 0;  
+/* General page background */
+.login-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-  
-p{
-    padding-top: 10px;
+
+/* Card container */
+.login-card {
+    background: #fff;
+    border-radius: 15px;
+    padding: 40px 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 400px;
     text-align: center;
-    color: antiquewhite;
-  }
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+}
+
+.login-title {
+    margin-bottom: 20px;
+    color: #4b0082;
+}
+
+.login-message {
+    color: #1e90ff;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}
+
+/* Form styling */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.login-form label {
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+}
+
+.login-form input {
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.login-form input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
+    outline: none;
+}
+
+/* Button styling */
+.login-btn {
+    padding: 12px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.login-btn:hover {
+    background: #5a67d8;
+}
+
+/* Signup link */
+.signup-link {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.signup-link a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.signup-link a:hover {
+    text-decoration: underline;
+}
+
+/* Footer styling */
+.footer {
+    margin-top: 30px;
+    color: #fff;
+    font-size: 0.8rem;
+}

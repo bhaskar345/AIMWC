@@ -1,9 +1,7 @@
-// src/Login.jsx
 import React, { useState, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext.jsx';
-import './styles/Login.css'
-import Footer from './FooterComponent.jsx';
+import './styles/Login.css';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -26,37 +24,39 @@ const Login = () => {
     const message = location.state?.message;
 
     return (
-        <>
-
-        <div id="login">
-            <div className="container">
-                <div id="login-row" className="row justify-content-center align-items-center">
-                    <div id="login-column" className="col-md-6">
-                        <div id="login-box" className="col-md-12">
-                            <form id="login-form" className="form" onSubmit={handleSubmit}>
-                            {message && <h5 className='text-info'>{message}</h5>}
-                                <h3 className="text-center text-info">Login</h3>
-                                <div className="form-group">
-                                    <label htmlFor="email" className="text-info"><h6>Email:</h6></label><br/>
-                                    <input type="email" onChange={handleChange} name="email" id="email" className="form-control"/>
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="password" className="text-info"><h6>Password:</h6></label><br/>
-                                    <input type="password" onChange={handleChange} name="password" id="password" className="form-control"/>
-                                </div>
-                                <div className="form-group">
-                                    <br/>
-                                    <input type="submit" name="submit" className="btn btn-info btn-md" value="submit"/>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+        <div className="login-page">
+            <div className="login-card">
+                <h2 className="login-title">Welcome Back</h2>
+                {message && <p className="login-message">{message}</p>}
+                <form onSubmit={handleSubmit} className="login-form">
+                    <label>Email</label>
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="Enter your email"
+                        required
+                    />
+                    <label>Password</label>
+                    <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Enter your password"
+                        required
+                    />
+                    <button type="submit" className="login-btn">Login</button>
+                </form>
+                <p className="signup-link">
+                    Don't have an account? <a href="/register">Sign Up</a>
+                </p>
             </div>
+            <footer className="footer">
+                <p>&copy; 2025 Bhaskar Singh Chauhan. All rights reserved.</p>
+            </footer>
         </div>
-        <Footer/>
-
-        </>
     );
 };
 
