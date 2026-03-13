@@ -133,9 +133,12 @@ Answer:
                 ai_text = ""
                 try:
                     response_stream = client.models.generate_content_stream(
-                        model="gemini-2.0-flash",
+                        model="gemini-2.5-flash",
                         contents=[{"role": "user", "parts": [{"text": prompt}]}],
-                        config=genai.types.GenerateContentConfig(max_output_tokens=200),
+                        config=genai.types.GenerateContentConfig(
+                            max_output_tokens=8192,
+                            thinking_config=genai.types.ThinkingConfig(thinking_budget=0)
+                        ),
                     )
 
                     got_chunk = False
@@ -147,14 +150,18 @@ Answer:
 
                     if not got_chunk:
                         fallback = client.models.generate_content(
-                            model="gemini-2.0-flash",
+                            model="gemini-2.5-flash",
                             contents=[{"role": "user", "parts": [{"text": prompt}]}],
-                            config=genai.types.GenerateContentConfig(max_output_tokens=200),
+                            config=genai.types.GenerateContentConfig(
+                                max_output_tokens=8192,
+                                thinking_config=genai.types.ThinkingConfig(thinking_budget=0)
+                            ),
                         )
                         ai_text = fallback.text or "I hear you, but I couldn’t generate a response right now."
                         yield ai_text
 
                 except Exception as e:
+                    print(e)
                     yield "Sorry, I couldn’t generate a response."
                 finally:
                     if ai_text.strip():
