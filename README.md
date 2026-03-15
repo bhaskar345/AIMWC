@@ -24,7 +24,7 @@ cd AIMWC
 
 ### 2. Backend Setup
 
-#### Django Backend
+#### Backend
 ```bash
 cd Backend
 python3 -m venv venv
