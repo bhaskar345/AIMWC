@@ -1,5 +1,4 @@
 import numpy as np
-import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
 from django.utils import timezone

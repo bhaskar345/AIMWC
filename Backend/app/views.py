@@ -126,7 +126,8 @@ Answer:
                         model="gemini-2.5-flash",
                         contents=[{"role": "user", "parts": [{"text": prompt}]}],
                         config=genai.types.GenerateContentConfig(
-                            max_output_tokens=8192,
+                            max_output_tokens=2048,
+                            temperature=0.7,
                             thinking_config=genai.types.ThinkingConfig(thinking_budget=0)
                         ),
                     )
@@ -143,7 +144,8 @@ Answer:
                             model="gemini-2.5-flash",
                             contents=[{"role": "user", "parts": [{"text": prompt}]}],
                             config=genai.types.GenerateContentConfig(
-                                max_output_tokens=8192,
+                                max_output_tokens=2048,
+                                temperature=0.7,
                                 thinking_config=genai.types.ThinkingConfig(thinking_budget=0)
                             ),
                         )
@@ -167,7 +169,7 @@ Answer:
 
         except Exception as err:
             logger.exception(f"Entry Failed:")
-            return Response({"error": "I hear you, but I couldn’t generate a response right now."},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Internal Server Error"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class JournalHistoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
