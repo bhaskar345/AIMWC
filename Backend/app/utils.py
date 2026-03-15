@@ -1,10 +1,27 @@
 import numpy as np
+import onnxruntime as ort
+import numpy as np
+import torch
 from sentence_transformers import SentenceTransformer
 from django.utils import timezone
 from datetime import timedelta
 from .models import JournalEntry
+from transformers import AutoTokenizer,AutoModelForSequenceClassification
 
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+tokenizer = AutoTokenizer.from_pretrained("monologg/bert-base-cased-goemotions-original")
+model = AutoModelForSequenceClassification.from_pretrained("monologg/bert-base-cased-goemotions-original")
+
+def predict_emotion(text):
+    inputs = tokenizer(text, return_tensors="pt", truncation=True)
+    outputs = model(**inputs)
+    probs = torch.nn.functional.softmax(outputs.logits, dim=-1)[0]
+    topk = torch.topk(probs, k=3)
+    labels = [model.config.id2label[i.item()] for i in topk.indices]
+    scores = [round(s.item(), 2) for s in topk.values]
+    emotions = [{"label": label, "score": scores[i]} for i, label in enumerate(labels)]
+    return emotions
 
 def generate_embedding(text):
     if not text or not text.strip():

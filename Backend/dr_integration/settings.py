@@ -147,3 +147,20 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = 'app.CustomUser'
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": "app.log",
+        },
+    },
+    "loggers": {
+        "": {
+            "handlers": ["file"],
+            "level": "INFO",
+        },
+    },
+}

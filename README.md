@@ -11,7 +11,6 @@
 The **AI Mental Wellness Companion** (AIMWC) helps you by:
 -  **Tracking moods** over time with visual charts.
 -  Offering **positive, empathetic suggestions** via an AI chatbot.
--  Providing both **Django** and **FastAPI** backends to suit your preferred backend stack.
 
 ---
 
@@ -31,20 +30,9 @@ cd Backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-export gemini_api_key="your_gemini_api_key_here"
+export API_KEY="YOUR_GEMINI_API_KEY"
 python manage.py migrate
 python manage.py runserver
-```
-
-#### FastAPI Backend
-```bash
-cd FastAPI_Backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-export gemini_api_key="your_gemini_api_key_here"
-alembic upgrade head
-uvicorn main:app --reload
 ```
 
 ### 3. Frontend Setup
@@ -61,8 +49,8 @@ Visit your browser at `http://localhost:5173` to explore the app!
 
 ```
 ┌─────────────────┐      ┌───────────────┐      ┌───────────────┐
-│   Frontend      │◀────▶│  Backend API  │◀────▶│  Gemini AI    │
-│ (charts + chat) │      │ (Django/FastAPI) │      │ (mood insights) │
+│   Frontend      │◀────▶│  Backend API  │◀────▶│  Gemini AI  │
+│ (charts + chat) │      │    (Django)   │       (mood insights)│
 └─────────────────┘      └───────────────┘      └───────────────┘
 ```
 

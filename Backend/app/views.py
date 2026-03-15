@@ -1,4 +1,4 @@
-import torch, os
+import os, logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
@@ -7,20 +7,16 @@ from django.db import IntegrityError
 from django.contrib.auth import authenticate
 from django.http import StreamingHttpResponse
 from datetime import date
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from .models import JournalEntry, CustomUser
 from google import genai
 from collections import defaultdict
-from .utils import generate_embedding, find_similar_entries
+from .utils import generate_embedding, find_similar_entries, predict_emotion
 from dotenv import load_dotenv
 
-
 load_dotenv()
-client = genai.Client(api_key=os.getenv('gemini_api_key'))
+client = genai.Client(api_key=os.getenv('API_KEY'))
 
-tokenizer = AutoTokenizer.from_pretrained("monologg/bert-base-cased-goemotions-original")
-model = AutoModelForSequenceClassification.from_pretrained("monologg/bert-base-cased-goemotions-original")
-
+logger = logging.getLogger(__name__)
 
 class UserRegistrationView(APIView):
     def post(self, request):
@@ -42,8 +38,8 @@ class UserRegistrationView(APIView):
                 return Response({'message': 'User already exists'}, status=status.HTTP_400_BAD_REQUEST)
         
         except Exception as err:
-            print(err)
-
+            logger.exception(f"User registration failed for email: {email}")
+            return Response({"error": "Internal server error"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class LoginView(APIView):
     def post(self, request):
@@ -78,13 +74,7 @@ class EntryView(APIView):
         try:
             text = request.data.get('text')
 
-            inputs = tokenizer(text, return_tensors="pt", truncation=True)
-            outputs = model(**inputs)
-            probs = torch.nn.functional.softmax(outputs.logits, dim=-1)[0]
-            topk = torch.topk(probs, k=3)
-            labels = [model.config.id2label[i.item()] for i in topk.indices]
-            scores = [round(s.item(), 2) for s in topk.values]
-            emotions = [{"label": label, "score": scores[i]} for i, label in enumerate(labels)]
+            emotions = predict_emotion(text)
 
             query_embedding = generate_embedding(text)
 
@@ -161,7 +151,7 @@ Answer:
                         yield ai_text
 
                 except Exception as e:
-                    print(e)
+                    logger.exception(f"Entry Failed:")
                     yield "Sorry, I couldn’t generate a response."
                 finally:
                     if ai_text.strip():
@@ -176,8 +166,9 @@ Answer:
             return StreamingHttpResponse(stream(), content_type="text/plain", status=200)
 
         except Exception as err:
-            print("Error:", err)
-
+            logger.exception(f"Entry Failed:")
+            return Response({"error": "I hear you, but I couldn’t generate a response right now."},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 class JournalHistoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
