@@ -1,5 +1,5 @@
-import os, threading
-from .startup import download_models_if_needed
+import os
+from .startup import ensure_model
 from django.apps import AppConfig
 
 
@@ -11,4 +11,4 @@ class AppConfig(AppConfig):
         if os.environ.get("RUN_MAIN") != "true":
             return
 
-        download_models_if_needed()
+        ensure_model()
