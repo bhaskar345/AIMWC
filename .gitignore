@@ -7,7 +7,6 @@ __pycache__/
 *.pyo
 
 test.py
-model/
 CONVERT.Py
 
 # Virtual environment

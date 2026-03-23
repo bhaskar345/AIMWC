@@ -1,2 +1,0 @@
-version=1
-folder_id=14m1CnT6-LUVMlFHHde93PMyc6ofIXw_7
